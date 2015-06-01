@@ -30,7 +30,7 @@ class hashTable {
   // If an optional pointer to a bool is provided,
   // set the bool to true if the key is in the hash table,
   // and set the bool to false otherwise.
-  void *getPointer(const std::string &key, bool *b = NULL);
+  //void *getPointer(const std::string &key, bool *b = NULL);
 
   // Set the pointer associated with the specified key.
   // Returns 0 on success,
@@ -57,6 +57,7 @@ class hashTable {
     bool isOccupied;
     bool isDeleted;
     void *pv;
+    hashItem(const std::string &key, bool isOccupied, bool isDeleted, void *pv);
   };
 
   int capacity; // The current capacity of the hash table.
