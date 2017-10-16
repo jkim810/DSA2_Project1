@@ -4,7 +4,14 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <cstdio>
+#include <cstdlib>
+#include <sstream>
+#include <ctime>
+#include <set>
 #include "hash.h"
+
+using namespace std;
 
 class dictionary{
 
@@ -12,20 +19,18 @@ public:
 	//Constructor
 	dictionary(){};
 	//Function that reads in the dictionary
-	void loadDictionary(const std::string &dictionaryFileName);
+	void loadDictionary(const string &dictionaryFileName);
 	//Function that reads in the file to be spellchecked
-	void readFile(const std::string fileToCheckName, const std::string outFileName);
+	void readFile(const string fileToCheckName, const string outFileName);
 
 private:
 	//HashTable that stores the dictionary
 	hashTable *h = new hashTable();
 	//Function that converts all strings into lower case
-	std::string toLowerCase(std::string word);
-	//Functions to tokenize strings
-	std::vector<std::string> split(const std::string &s, char delim);
-	std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems);
+	string toLowerCase(const string &word);
 	//boolean to get rid of all invalid words
 	bool isValidWord(const char c);
+	bool hasDigits(const string& word);
 };
 
 #endif //_CHECK_H
