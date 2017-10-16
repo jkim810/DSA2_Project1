@@ -1,73 +1,109 @@
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <cstring>
-#include <cstdio>
-#include <cstdlib>
-#include <vector>
-#include <sstream>
-#include <ctime>
-#include "hash.h"
 #include "spellcheck.h"
 
-void dictionary::loadDictionary(const std::string &dictionaryFileName){
+using namespace std;
 
-	std::ifstream input(dictionaryFileName.c_str());
+int main(){
+	dictionary *dic = new dictionary();
+	string dictionaryFileName, documentSpellCheckName, outputFileName;
+	clock_t t1, t2;
+	double timeDiff;
+
+	cout << "Enter name of dictionary: ";
+	cin >> dictionaryFileName;
+
+	t1 = clock();
+	dic -> loadDictionary(dictionaryFileName);
+	t2 = clock();
+	timeDiff = ((double) (t2 - t1)) / CLOCKS_PER_SEC;
+	cout<< "Total time (in seconds) to load dictionary: " << timeDiff << endl;
+
+	cout << "Enter name of input file: ";
+	cin >> documentSpellCheckName;
+	cout << "Enter name of output file: ";
+	cin >> outputFileName;
+
+	t1 = clock();
+	dic -> readFile(documentSpellCheckName, outputFileName);
+	t2 = clock();
+	timeDiff = ((double) (t2 - t1)) / CLOCKS_PER_SEC;
+	cout<< "Total time (in seconds) to check document: " << timeDiff <<endl;
+}
+
+void dictionary::loadDictionary(const string &dictionaryFileName){
+	ifstream input(dictionaryFileName.c_str());
 	if(!input){
-		std::cerr<<"Error: File could not open." << std::endl;
+		cerr<<"Error: File could not open." << endl;
 		exit(0);
 	}
 
 	while(!input.eof()){
-		std::string line;
-		std::getline(input, line);
-		if(line == "") break;
+
+		string line;
+		getline(input, line);
 		line = toLowerCase(line);
 		h->insert(line);
 	}
-	
+
 	input.close();	
 }
 
-void dictionary::readFile(const std::string fileToCheckName, const std::string outFileName){
+void dictionary::readFile(const string fileToCheckName, const string outFileName){
 	
-	std::ifstream input(fileToCheckName.c_str());
+	ifstream input(fileToCheckName.c_str());
 	if(!input){
-		std::cerr<<"Error: File could not open." << std::endl;
+		cerr<<"Error: File could not open." << endl;
 		exit(0);
 	}
 
-	std::ofstream output(outFileName.c_str());
+	ofstream output(outFileName.c_str());
 	if (!output) {
-   		std::cerr << "Error: could not open " << outFileName << std::endl;
+   		cerr << "Error: could not open " << outFileName << endl;
    		exit(1);
   	}
 	
-	int index, counter, lineCounter;
-
-	lineCounter = 0;
+	int lineCtr = 0;
 
 	while(!input.eof()){
 
-		lineCounter++;
+		lineCtr++;
 
-		//Variables
-		std::string line, word;
-		std::string::iterator it;
-		std::getline(input, line);
-		counter = 0;
-
-		//output << "Original Line: " << line << std::endl;
+		//Parse line by line
+		string line;
+		getline(input, line);
 		line = toLowerCase(line);
 
-		std::vector<std::string> x = split(line, ' ');
-		for(std::vector<std::string>::iterator it = x.begin(); it!=x.end(); it++){
-			std::string tmp = (*it);
-			if(tmp.length() > 20){
-		    	output << "Long word at line " << lineCounter << ", starts: " << tmp.substr(0,20) << std::endl;
-		    }else if(!h->contains(tmp)){
-		    	output << "Unknown word at line " << lineCounter << ": " << tmp << std::endl;
-		    }
+		//sets for delimeters since no duplicates should be allowed
+		set <char> delim;
+		//stores tokenized strings for each line
+		vector <string> words;
+		
+		//tokenize routine
+		stringstream ss;
+		for(char c: line){
+			if(!isValidWord(c))	{
+				if(!ss.str().empty()) words.push_back(ss.str());
+				ss.str("");
+				ss.clear();
+				delim.insert(c);
+			} else{
+				ss << c;
+			}
+		}
+		
+		//make sure last word is puhsed into the vector
+		if(!ss.str().empty()) words.push_back(ss.str());
+		
+
+		for(string tmp: words){
+			if(hasDigits(tmp)){
+				//ignore words with digits
+			}else if(tmp.length() > 20){
+			   	//report words longer than 20
+			   	output << "Long word at line " << lineCtr << ", starts: " << tmp.substr(0,20) << endl;
+			}else if(!h->contains(tmp)){
+				//report words not in dictionary
+			   	output << "Unknown word at line " << lineCtr << ": " << tmp << endl;
+			}
 		}	
 	}
 
@@ -75,69 +111,28 @@ void dictionary::readFile(const std::string fileToCheckName, const std::string o
 	output.close();
 }
 
-std::string dictionary::toLowerCase(std::string word){
-
-	std::string tmp = "";
-
-	std::string::iterator it;
-	for(it = word.begin(); it != word.end(); it++){
-		char c = (*it);
-		if(c > 64 && c < 91){
-			c = c + 32;
-		}
-		if(isValidWord(c)){
-			tmp.push_back(c);
-		}
+string dictionary::toLowerCase(const string& word){
+	stringstream tmp;
+	for(char c: word){
+		if(c > 64 && c < 91) c += 32;
+		tmp << c;
 	}
-
-	return tmp;
+	return tmp.str();
 }
 
 bool dictionary::isValidWord(const char c){
-	if((c > 64 && c < 91) || (c > 47 && c < 58) ||c == 45 || c == 92 || c == 32 || c == 39 ||(c > 96 && c < 123)){
+	if((c > 64 && c < 91) || (c > 47 && c < 58) || (c == '-') || (c == '\'') ||(c > 96 && c < 123)){
 		return true;
+	} else {
+		return false;
+	}
+}
+
+bool dictionary::hasDigits(const string& word){
+	for(char c: word){
+		if(c>= '0' && c<='9'){
+			return true;
+		}
 	}
 	return false;
-}
-
-std::vector<std::string> &dictionary::split(const std::string &s, char delim, std::vector<std::string> &elems) {
-    std::stringstream ss(s);
-    std::string item;
-    while (std::getline(ss, item, delim)) {
-        elems.push_back(item);
-    }
-    return elems;
-}
-
-std::vector<std::string> dictionary::split(const std::string &s, char delim) {
-    std::vector<std::string> elems;
-    split(s, delim, elems);
-    return elems;
-}
-
-int main(){
-	dictionary *dic = new dictionary();
-	std::string dictionaryFileName, documentSpellCheckName, outputFileName;
-	clock_t t1, t2;
-	double timeDiff;
-
-	std::cout << "Enter name of dictionary: ";
-	std::cin >> dictionaryFileName;
-
-	t1 = clock();
-	dic -> loadDictionary(dictionaryFileName);
-	t2 = clock();
-	timeDiff = ((double) (t2 - t1)) / CLOCKS_PER_SEC;
-	std::cout<< "Total time (in seconds) to load dictionary: " << timeDiff << std::endl;
-
-	std::cout << "Enter name of input file: ";
-	std::cin >> documentSpellCheckName;
-	std::cout << "Enter name of output file: ";
-	std::cin >> outputFileName;
-
-	t1 = clock();
-	dic -> readFile(documentSpellCheckName, outputFileName);
-	t2 = clock();
-	timeDiff = ((double) (t2 - t1)) / CLOCKS_PER_SEC;
-	std::cout<< "Total time (in seconds) to check document: " << timeDiff << std::endl;
 }
